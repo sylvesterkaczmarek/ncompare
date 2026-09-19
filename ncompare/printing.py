@@ -169,7 +169,8 @@ class Outputter:
             text_to_print = ansi_escape.sub("", text_to_print)
         elif print_args.get("file") is None:
             # Preserve terminal conversion, redirected-output stripping and autoreset
-            # without colorama.init() replacing the process-wide stdout/stderr.
+            # without colorama.init() replacing the process-wide stdout/stderr. Built
+            # per write so that re-reading sys.stdout honors capsys and redirect_stdout.
             print_args["file"] = colorama.AnsiToWin32(sys.stdout, autoreset=True).stream
 
         # Execute the print command.
