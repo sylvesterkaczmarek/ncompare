@@ -571,29 +571,19 @@ class Comparison:
             elif self.show_attributes and self.file_types == "hdf5":
                 for name in the_variable.attrs.keys():
                     attribute_value = the_variable.attrs[name]
-                    if isinstance(attribute_value, np.ndarray):
-                        if h5py.check_string_dtype(attribute_value.dtype) is not None:
-                            # Decode text before formatting, without treating vlen
-                            # strings (object dtype) as object-reference arrays.
-                            if attribute_value.dtype.kind == "S":
-                                attribute_value = np.char.decode(
-                                    attribute_value, "utf-8", errors="replace"
-                                )
-                            else:
-                                attribute_value = attribute_value.astype(str)
-                            retrieved_value = str(attribute_value)
-                        elif attribute_value.dtype == h5py.ref_dtype:
-                            retrieved_value = __name_from_h5_ref(attribute_value[0][0])
-                        else:
-                            try:
-                                retrieved_value = str(
-                                    [__name_from_h5_ref(a[0]) for a in attribute_value]
-                                )
-                            except IndexError:
-                                retrieved_value = str(attribute_value)
-
+                    if (
+                        isinstance(attribute_value, np.ndarray)
+                        and h5py.check_dtype(ref=attribute_value.dtype) is not None
+                    ):
+                        # Resolve object references to dataset names as before.
+                        retrieved_value = __name_from_h5_ref(attribute_value[0][0])
                     else:
-                        retrieved_value = value_to_comparable_str(attribute_value)
+                        # Keep HDF5 values, including string and numeric arrays,
+                        # raw until get_attribute_value_as_str renders them.
+                        # NumPy's str(array) abbreviates long arrays, masking
+                        # tail differences, and uses a different presentation
+                        # from root attributes.
+                        retrieved_value = attribute_value
 
                     v_attributes[name] = retrieved_value
         else:

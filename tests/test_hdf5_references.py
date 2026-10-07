@@ -31,6 +31,7 @@ import pytest
 
 from ncompare.Comparison import Comparison
 from ncompare.core import compare
+from ncompare.getters import value_to_comparable_str
 from ncompare.printing import Outputter
 from ncompare.utility_types import FileToCompare
 
@@ -123,8 +124,8 @@ def test_invalid_variable_string_bytes_use_replacement_decoding(tmp_path):
     assert "\\xff" not in report.read_text()
 
 
-def test_hdf5_numeric_attribute_array_format_is_unchanged(tmp_path):
-    """Text decoding must not change the existing numeric array representation."""
+def test_hdf5_numeric_attribute_array_keeps_full_values_for_comparison(tmp_path):
+    """Numeric arrays must stay raw until uniform rendering and comparison."""
     path = tmp_path / "numeric.h5"
     value = np.array([1, 2, 3, 4])
     with h5py.File(path, "w") as dataset:
@@ -133,7 +134,8 @@ def test_hdf5_numeric_attribute_array_format_is_unchanged(tmp_path):
     with Outputter() as out, h5py.File(path) as dataset:
         comparison = Comparison(file, file, out, show_chunks=False, show_attributes=True)
         props = comparison._create_var_properties(dataset, "data", dataset)
-        assert props.attributes["matrix"] == str(value)
+        np.testing.assert_array_equal(props.attributes["matrix"], value)
+        assert value_to_comparable_str(props.attributes["matrix"]) == "[1, 2, 3, 4]"
 
 
 @pytest.mark.parametrize("array", [False, True])
